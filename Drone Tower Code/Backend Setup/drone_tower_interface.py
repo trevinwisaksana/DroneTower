@@ -26,7 +26,7 @@ print('Arduino initialized')
 def initiate_auto_loader():
 
     # variables for template page (templates/index.html)
-    author = "Harambe"
+    author = "Trevin Wisaksana"
 
     # if we make a post request on the webpage aka press button then do stuff
     if request.method == 'POST':
@@ -35,13 +35,13 @@ def initiate_auto_loader():
         if request.form['submit'] == 'Loading Mode':
             print('Loading mode')
 
-            # turn on LED that is Green
+            # Sends the direction of the belt towards the drone
             a.loading_mode()
 
         if request.form['submit'] == 'Unloading Mode':
             print('Unloading mode')
 
-            # Turn LED's to work normally
+            # Sends the direction of the belt towards the drone
             a.unloading_mode()
 
         else:

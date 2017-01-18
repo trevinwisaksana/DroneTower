@@ -14,6 +14,11 @@
 #include <SoftwareSerial.h>
 #include <Servo.h>
 
+#define TURN_TIME 1 // Turn time determines the number of milliseconds the delay is
+#define STOPPED_SERVO 69 // This is the equivilant of 90
+#define LOADING_STATE 61 // This is the loading point on the drone
+#define UNLOADING_STATE 77 // This is the unloading point to the tower
+
 double angle_rad = PI/180.0; 
 double angle_deg = 180.0/PI;
 
@@ -21,7 +26,9 @@ bool is_loading = false;
 
 char operation; // Holds operation (R, W, ...)
 char mode; // Holds the mode (D, A)
+char tower_state;
 
+int angle = 0; // Used as the angle of the servo
 int pin_number; // Holds the pin number
 int digital_value; // Holds the digital value
 int analog_value; // Holds the analog value
@@ -102,10 +109,14 @@ void setup() {
     */
   
     Serial.begin(9600); // Serial Port at 9600 baud: the number of bits per second
+    
     Serial.setTimeout(100); // Instead of the default 1000ms, in order
                             // to speed up the Serial.parseInt()
-    // Set normal mode for global 
+                            
+    // Connecting the servo at Pin 6
     conveyor_servo.attach(6);
+    conveyor_servo.write(STOPPED_SERVO);
+    tower_state = 'S';
 }
 
 void controlLoop() { 
@@ -114,16 +125,17 @@ void controlLoop() {
     if (Serial.available() > 0) {
         // operations reads the character that comes in 
         operation = Serial.read();
+        
         // The delay is used because the computer might read faster than the character gets
         // This allows abot 5 to 6 characters to show up 
         delay(wait_for_transmission); // If not delayed, second character is not correctly read
         mode = Serial.read();
         pin_number = Serial.parseInt(); // Waits for an int to be transmitted
-        if (Serial.read()==':'){
+        
+        if (Serial.read()==':') {
             value_to_write = Serial.parseInt(); // Collects the value to be written
-        } else if (Serial.read()=='!'){
-          // is_normal = Serial.
-        }
+        } 
+        
         /*Switch statement that has a case for Read, Write, Mode*/
         switch (operation) {
             case 'R': // Read operation, e.g. RD12, RA4
@@ -132,9 +144,9 @@ void controlLoop() {
                 } else if (mode == 'A'){ // Analog read
                     analog_read(pin_number);
  
-        } else {
-          break; // Unexpected mode
-        }
+                } else {
+                  break; // Unexpected mode
+                }
                 break;
 
             case 'W': // Write operation, e.g. WD3:1, WA8:255
@@ -152,12 +164,12 @@ void controlLoop() {
                 break;
 
             case 'L': // Loading mode to make the package be loaded
-                is_loading = true;
+                tower_state = 'L';
                 Serial.print('Loading mode engaged');
                 break;
                 
             case 'U': // Unloading mode to remove the package from the drone
-                is_loading = false;
+                tower_state = 'U';
                 Serial.print('Unloading mode engaged');
                 break;
             
@@ -168,20 +180,50 @@ void controlLoop() {
 }
 
 void loop() {
-  if (is_loading == true) {
-      Serial.print("Currently loading")
-      controlLoop();
-    } else {
-      Serial.print("Currently unloading")
-      controlLoop();
-    }
+
+  switch (tower_state) {
+    case 'L':
+      for (angle = LOADING_STATE; angle <= 69; angle += 1) {
+        Serial.print(angle, DEC);
+        Serial.println(" ");
+        conveyor_servo.write(angle);
+        // Delay is used to prevent the for-loop from being repeated too soon
+        _delay(TURN_TIME);
+      
+        if (angle == 69) {
+          tower_state = 'S';
+        }
+       }
+      break;
+      
+    case 'U':
+      for (angle = UNLOADING_STATE; angle >= 69; angle -= 1) {
+        Serial.print(angle, DEC);
+        Serial.println(" ");
+        conveyor_servo.write(angle);
+        // Delay is used to prevent the for-loop from being repeated too soon
+        _delay(TURN_TIME);
+    
+        if (angle == 69) {
+          tower_state = 'S';
+        }
+      }
+      break;
+      
+    case 'S':
+      conveyor_servo.write(STOPPED_SERVO);
+      _delay(TURN_TIME);
+      Serial.println("Called");
+      break;
+    default:
+      break;
+  }
 }
 
-// Delay is used to intercept the 
+// Custom delay method to be able to intercept the code while on the loop
 void _delay(float seconds){
     long endTime = millis() + seconds * 1000;
-    if (is_loading == true) {
-      while(millis() < endTime)
+    while(millis() < endTime) {
         controlLoop();
     }
 }

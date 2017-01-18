@@ -94,4 +94,4 @@ class Arduino():
         Arduino device.
         """
         self.conn.close()
-        print 'Connection to Arduino closed'
+        print('Connection to Arduino closed')
