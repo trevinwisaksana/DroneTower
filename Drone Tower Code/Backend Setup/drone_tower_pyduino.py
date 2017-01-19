@@ -9,7 +9,7 @@ class Arduino():
     Models an Arduino connection
     """
 
-    def __init__(self, serial_port='/dev/cu.usbmodem1421', baud_rate=9600,
+    def __init__(self, serial_port='/dev/cu.usbmodem1411', baud_rate=9600,
             read_timeout=5):
         """as
         Initializes the serial connection to the Arduino board
